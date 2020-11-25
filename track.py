@@ -20,7 +20,7 @@ ax.axes.set_zlim3d(-50,50)
 FocalLength = (247 * 24)/11
 FOV = 60
 FOVH = 45
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(4)
 low_yellow = (50/400*180, 40/100*255, 100)
 high_yellow = (70/400*180, 100/100*255, 255)
 
@@ -95,7 +95,7 @@ while(cap.isOpened()):
             center = (int(x),int(y))
             radius = int(radius)
             cv2.circle(frame,center,radius,(0,255,0),3)
-            inches = distance_to_camera(2.7, FocalLength, radius*2)
+            inches = distance_to_camera(7, FocalLength, radius*2)
             font = cv2.FONT_HERSHEY_SIMPLEX
             cv2.putText(frame, f"{inches}in", (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
             angle = FOV * (x-320)/320
@@ -136,42 +136,45 @@ while(cap.isOpened()):
             cv2.circle(locationmap, (int(math.tan(rad)*inches)+100,200-int(inches)),5,(0,255,0),3)
 
             #ax.plot3D(x1,y1,z1, c="red");
-            tck, u = interpolate.splprep([x1,y1,z1], s=len(x1)-4)
-            x_knots, y_knots, z_knots = interpolate.splev(tck[0], tck)
-            u_fine = np.linspace(0,1,100)
-            x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
-            #ax.plot3D(x_fine,y_fine,z_fine, c="green");
-            
-            points = np.array([x_fine, y_fine, z_fine]).transpose().reshape(-1,1,3)
-            # set up a list of segments
-            segs = np.concatenate([points[:-1],points[1:]],axis=1)
+            try:
+                tck, u = interpolate.splprep([x1,y1,z1], s=len(x1)-4)
+                x_knots, y_knots, z_knots = interpolate.splev(tck[0], tck)
+                u_fine = np.linspace(0,1,100)
+                x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
+                #ax.plot3D(x_fine,y_fine,z_fine, c="green");
+                
+                points = np.array([x_fine, y_fine, z_fine]).transpose().reshape(-1,1,3)
+                # set up a list of segments
+                segs = np.concatenate([points[:-1],points[1:]],axis=1)
 
-            # make the collection of segments
-            lc = Line3DCollection(segs, cmap=plt.get_cmap('cool'), norm=plt.Normalize(0, 1))
-            colors = [[color]*math.floor(100/len(linecolor)) for color in linecolor]
-            colors = [j for i in colors for j in i]
-            colors = colors + (100-len(colors))*[colors[-1]]
-            # colors = linecolor
-            colors = [math.sqrt(e)/2 for e in colors]
-            print(np.mean(colors))
+                # make the collection of segments
+                lc = Line3DCollection(segs, cmap=plt.get_cmap('cool'), norm=plt.Normalize(0, 1))
+                colors = [[color]*math.floor(100/len(linecolor)) for color in linecolor]
+                colors = [j for i in colors for j in i]
+                colors = colors + (100-len(colors))*[colors[-1]]
+                # colors = linecolor
+                colors = [math.sqrt(e)/2 for e in colors]
+                print(np.mean(colors))
 
-            tck = interpolate.splrep(list(range(len(colors))), colors)
-            colors=[interpolate.splev(e, tck) for e in range(len(colors))]
-            lc.set_array(np.array(colors)) # color the segments by our parameter
-            ax.add_collection3d(lc)
+                tck = interpolate.splrep(list(range(len(colors))), colors)
+                colors=[interpolate.splev(e, tck) for e in range(len(colors))]
+                lc.set_array(np.array(colors)) # color the segments by our parameter
+                ax.add_collection3d(lc)
 
-            #plt.draw() 
-            plt.pause(0.02)
-            #graph_image = cv2.cvtColor(np.array(fig.canvas.get_renderer()._renderer),cv2.COLOR_RGB2BGR) 
-            #fig.canvas.draw()
-            plt.show()
-            # convert canvas to image
-            img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8,
-                    sep='')
-            img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                #plt.draw() 
+                plt.pause(0.02)
+                #graph_image = cv2.cvtColor(np.array(fig.canvas.get_renderer()._renderer),cv2.COLOR_RGB2BGR) 
+                #fig.canvas.draw()
+                plt.show()
+                # convert canvas to image
+                img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8,
+                        sep='')
+                img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
-            # img is rgb, convert to opencv's default bgr
-            img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+                # img is rgb, convert to opencv's default bgr
+                img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+            except:
+                pass
             #print(f"{inches}in, {angle} degrees")
     #cv2.imshow('thing',img)
     #cv2.waitKey(0)
